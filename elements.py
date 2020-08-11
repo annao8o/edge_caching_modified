@@ -104,16 +104,16 @@ class Zipf:
         return np.searchsorted(self.pdf, f) - 1
 
 
-if __name__ == '__main__':
-    server = PPP()
-    server.set_env(5)
-
-    user = PPP()
-    user.set_env(20)
-
-    plt.scatter(server.xx, server.yy, edgecolors='b', facecolor='b', alpha=0.5)
-    plt.scatter(user.xx, user.yy, edgecolors='r', facecolor='r', alpha=0.5)
-
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.show()
+# if __name__ == '__main__':
+#     server = PPP()
+#     server.set_env(5)
+#
+#     user = PPP()
+#     user.set_env(20)
+#
+#     plt.scatter(server.xx, server.yy, edgecolors='b', facecolor='b', alpha=0.5)
+#     plt.scatter(user.xx, user.yy, edgecolors='r', facecolor='r', alpha=0.5)
+#
+#     plt.xlabel('x')
+#     plt.ylabel('y')
+#     plt.show()
