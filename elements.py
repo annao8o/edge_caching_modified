@@ -16,6 +16,7 @@ class Cloud:
         self.server_num = None
         self.contents_num = None
         self.server_lst = list()
+        self.cluster_lst = list()
         self.graph = None
         self.users = list()
         self.cluster_num = None
@@ -35,6 +36,10 @@ class Cloud:
             g.add_node(i)
             print("Success to add server")
 
+        for i in range(self.cluster_num):
+            cluster = Cluster(i)
+            self.cluster_lst.append(cluster)
+
         self.graph = g
         self.library = np.arange(1, self.contents_num+1)
 
@@ -48,8 +53,7 @@ class Cloud:
 
         # for i in range(self.cluster_num[0], self.cluster_num[1]):
         #n_cluster = int(self.cluster_num[0])
-        n_cluster = 3
-
+        n_cluster = self.cluster_num
 
         ## dimension reduction (PCA) for visualization
         pca = PCA(n_components=2)
@@ -65,24 +69,49 @@ class Cloud:
             ax.annotate(str(i), xy=(pca_data[i][0], pca_data[i][1]))
         plt.show()
 
-        return kmeans.labels_
+        for i in range(len(self.users)):
+            self.users[i].set_cluster(kmeans.labels_[i])
+
+        for cluster in self.cluster_lst:
+            for i in range(len(kmeans.labels_)):
+                if cluster.id == kmeans.labels_[i]:
+                    cluster.set_users(self.users[i])
+
+            p_k = cluster.cal_p_k()
+        self.asso_server_to_cluster()
 
     def asso_server_to_cluster(self):
-        for i in self.server_lst:
-            # i.cluster =  ### #어떤 기준으로 associate 할 것인지?
-            pass
+        for s in self.server_lst:
+            cluster_idx = random.randrange(self.cluster_num)
+            s.asso_cluster(self.cluster_lst[cluster_idx])
 
-    def cal_cluster_p_vec(self):
-        pass
+
+class Cluster:
+    def __init__(self, id):
+        self.id = id
+        self.p_k = None
+        self.cluster_users = list()
+
+    def set_users(self, user):
+        self.cluster_users.append(user)
+
+    def cal_p_k(self):
+        pref_sum = list()
+        for u in self.cluster_users:
+            pref_sum += u.pref_vec
+        self.p_k = [element / len(self.cluster_users) for element in pref_sum]
+
+        return self.p_k
+
 
 class EdgeServer:
     def __init__(self, id):
         self.id = id
         self.state = None
         self.content = None
-        self.cluster = None
         self.total_request = 0
         self.algo_lst = list()
+        self.cluster = None
 
     def add_algo(self, algo):
         if type(algo).__name__ == 'CacheAlgo':
@@ -91,8 +120,8 @@ class EdgeServer:
         else:
             print('wrong algo class')
 
-    def asso_cluster(self):
-        pass
+    def asso_cluster(self, cluster):
+        self.cluster = cluster
 
     def request_content(self, content_id):
         print('requests content (id: {})'.format(content_id))
@@ -116,6 +145,7 @@ class EdgeServer:
 class User:
     def __init__(self, id):
         self.pref_vec = list()
+        self.cluster = None
         self.id = id
 
     def make_pref(self, z_val, contents_num):
@@ -129,6 +159,10 @@ class User:
 
         for i in range(contents_num):
             self.pref_vec[idx_lst[i]] = tmp[i]
+
+    def set_cluster(self, cluster_id):
+        self.cluster = cluster_id
+
 
 class PPP:
     def __init__(self):
@@ -163,15 +197,18 @@ class PPP:
 class Zipf:
     def __init__(self):
         self.pdf = None
+        self.cdf = None
 
     def set_env(self, expn, num_contents):
         temp = np.power(np.arange(1, num_contents+1), -expn)
         zeta = np.r_[0.0, np.cumsum(temp)]
         self.pdf = [x / zeta[-1] for x in temp]
+        self.cdf = [x / zeta[-1] for x in zeta]
 
     def get_sample(self):
         f = random.random()
-        return np.searchsorted(self.pdf, f) - 1
+        print(f)
+        return np.searchsorted(self.cdf, f) - 1
 
 
 if __name__ == '__main__':
