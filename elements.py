@@ -86,6 +86,7 @@ class Cloud:
             s.asso_cluster(self.cluster_lst[cluster_idx])
 
 
+
 class Cluster:
     def __init__(self, id):
         self.id = id
@@ -102,6 +103,18 @@ class Cluster:
         self.p_k = [element / len(self.cluster_users) for element in pref_sum]
 
         return self.p_k
+
+    def get_popular_contents(self):
+        idx_p_tuple = list()
+        for i in range(len(self.p_k)):
+            idx_p_tuple.append((i, self.p_k[i]))
+
+        # sort
+        idx_p_tuple.sort(key=lambda t:t[1], reverse=True)
+        # print(self.p_k)
+        # print(idx_p_tuple[:10])
+        popularity_sorted = [e[0] for e in idx_p_tuple]
+        return popularity_sorted
 
 
 class EdgeServer:
@@ -122,6 +135,16 @@ class EdgeServer:
 
     def asso_cluster(self, cluster):
         self.cluster = cluster
+
+    def init_caching(self):
+        for algo in self.algo_lst:
+            if algo.is_cluster:
+                data_lst = self.cluster.get_popular_contents()
+            else:
+                # data_lst = #zipf로 순서대로 넣어주기
+                pass
+            contents = algo.placement_content(data_lst)
+            print("algo {}: {}".format(algo.id, contents))
 
     def request_content(self, content_id):
         print('requests content (id: {})'.format(content_id))
@@ -172,7 +195,6 @@ class PPP:
         self.yy = None
 
     def set_env(self, density):
-        #rectangle dimensions
         r = 1
         xx0 = 0
         yy0 = 0

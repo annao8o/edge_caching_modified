@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime, timedelta
 from elements import *
+from cacheAlgo import *
 
 np.random.seed(0)
 def simulation(c, z_val, contents, arrival_rate, departure_rate, request_rate):
@@ -23,15 +24,20 @@ def simulation(c, z_val, contents, arrival_rate, departure_rate, request_rate):
     hit_result = [[] for _ in range(len(c.server_lst))]
 
     for s in c.server_lst:
-        print("server: {} / asso_cluster: {} / cluster p_k: {}".format(s.id, s.cluster.id, s.cluster.p_k[:10]))
+        print("\nserver: {} / asso_cluster: {}".format(s.id, s.cluster.id))
+        s.init_caching()
 
     current_time += update_period
-    # while current_time <= end_time:
-    #     for s in c.server_lst:
-    #         print("server: {} / asso_cluster: {} / cluster p_k: {}".format(s.id, s.asso_cluster.id, s.asso_cluster.p_k))
-             # requests = np.random.poisson(request_rate)
-            # for _ in range(requests):
-            #     content = s.
+    while current_time <= end_time:
+        for s in c.server_lst:
+            requests = np.random.poisson(request_rate)
+            for _ in range(requests):
+                content = zipf.get_sample()
+                hit_lst = s.request_content(content)
+                for i in range(len(s.algo_lst)):
+                    hit_result[i] += hit_lst[i]
+
+
 
 
 
@@ -50,5 +56,14 @@ if __name__ == "__main__":
     arrival_rate = 1
     departure_rate = 1/60
     request_rate = 10
+
+    for s in c.server_lst:
+        algo_0 = CacheAlgo()
+        algo_0.set_option('algo_0', True, cluster_num, 10, 1)
+        algo_1 = CacheAlgo()
+        algo_1.set_option('algo_1', True, cluster_num, 20, 1)
+
+        s.add_algo(algo_0)
+        s.add_algo(algo_1)
 
     simulation(c, z_val, contents_num, arrival_rate, departure_rate, request_rate)

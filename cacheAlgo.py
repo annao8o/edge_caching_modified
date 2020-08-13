@@ -17,6 +17,16 @@ class CacheAlgo:
         self.server_capacity = capacity
         self.LCU_num = LCU_num
 
+    def check_capacity(self):
+        if self.cached_contents_lst < self.server_capacity:
+            return True
+        else:
+            return False
+
+    def placement_content(self, contents_lst):
+        self.cached_contents_lst.append(contents_lst[:self.server_capacity])
+        return self.cached_contents_lst
+
     def have_content(self, content_id):
         hit = False
         for i in range(len(self.cached_contents_lst)):
