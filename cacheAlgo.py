@@ -25,7 +25,7 @@ class CacheAlgo:
 
     def placement_content(self, contents_lst):
         self.cached_contents_lst.append(contents_lst[:self.server_capacity])
-        return self.cached_contents_lst
+        print("{}: {}".format(self.id, self.cached_contents_lst))
 
     def have_content(self, content_id):
         hit = False
