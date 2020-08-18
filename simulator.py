@@ -32,9 +32,11 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             algo.placement_content(data_lst)
         # s.init_caching()
     total_request = 0
+    request_matrix = list()
 
     current_time += update_period
     while current_time <= end_time:
+        request_lst = list()
         print(current_time)
         requests = np.random.poisson(request_rate)
 
@@ -53,6 +55,7 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
                 hit_result[i] += hit_lst[i]
 
             print(hit_result, '\n')
+
 
         current_time += update_period
 
@@ -95,8 +98,18 @@ if __name__ == "__main__":
     departure_rate = 1/60
     request_rate = 1
 
-    # c.set_env(server_num, contents_num, cluster_num)
-    c.set_env(server_position, user_position, contents_num, cluster_num)
+    num_batches = len(train_loader)
+    num_epochs = 2000
+    learning_rate = 0.001
+    input_size = 1
+    hidden_size = 100
+    num_layers = 1
+    output_size = 1
+
+    model = LSTM(input_size, output_size, hidden_size, num_layers)
+    c.set_env(server_position, user_position, contents_num, cluster_num, model)
+
+    c.training(learning_rate)
 
     for s in c.server_lst:
         s.communication_r = server_communication_r
@@ -144,15 +157,15 @@ if __name__ == "__main__":
         algo_16 = CacheAlgo()
         algo_16.set_option('algo_16', True, cluster_num, 1000, 1)
         algo_17 = CacheAlgo()
-        algo_17.set_option('algo_17', False, cluster_num, 1200, 1)
+        algo_17.set_option('algo_17', True, cluster_num, 1200, 1)
         algo_18 = CacheAlgo()
-        algo_18.set_option('algo_18', False, cluster_num, 1400, 1)
+        algo_18.set_option('algo_18', True, cluster_num, 1400, 1)
         algo_19 = CacheAlgo()
-        algo_19.set_option('algo_19', False, cluster_num, 1600, 1)
+        algo_19.set_option('algo_19', True, cluster_num, 1600, 1)
         algo_20 = CacheAlgo()
-        algo_20.set_option('algo_20', False, cluster_num, 1800, 1)
+        algo_20.set_option('algo_20', True, cluster_num, 1800, 1)
         algo_21 = CacheAlgo()
-        algo_21.set_option('algo_21', False, cluster_num, 2000, 1)
+        algo_21.set_option('algo_21', True, cluster_num, 2000, 1)
 
         s.add_algo(algo_0)
         s.add_algo(algo_1)
