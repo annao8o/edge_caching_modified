@@ -12,6 +12,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 np.random.seed(0)
 random.seed(0)
+
 class Cloud:
     def __init__(self):
         self.library = None
@@ -53,6 +54,14 @@ class Cloud:
         self.graph = g
         self.library = np.arange(1, self.contents_num+1)
 
+    def record_request(self, content_id):
+        request_dict = dict()
+        for i in range(self.contents_num):
+            request_dict[i] = 0
+
+        request_dict[content_id] += 1
+
+        return request_dict
 
     def training(self, learning_rate, num_epochs, train_loader, val_loader):
         criterion = nn.MSELoss()
@@ -113,7 +122,6 @@ class Cloud:
         p_vectors = list()
         for user in self.user_lst:
             p_vectors.append(user.pref_vec)
-
 
         # for i in range(self.cluster_num[0], self.cluster_num[1]):
         #n_cluster = int(self.cluster_num[0])

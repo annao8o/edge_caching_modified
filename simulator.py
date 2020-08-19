@@ -19,6 +19,7 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     # print("kmeans label:{}".format(cluster_label))
 
     current_time = datetime(2000, 1, 1, hour=6, minute=0, second=0)
+    record_time = datetime(2000, 1, 1, hour=15, minute=0, second=0)
     hit_result = [0 for _ in range(len(c.server_lst[0].algo_lst))]
 
     for s in c.server_lst:
@@ -32,11 +33,10 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             algo.placement_content(data_lst)
         # s.init_caching()
     total_request = 0
-    request_matrix = list()
+    req_matrix = list()
 
     current_time += update_period
     while current_time <= end_time:
-        request_lst = list()
         print(current_time)
         requests = np.random.poisson(request_rate)
 
@@ -55,7 +55,9 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
                 hit_result[i] += hit_lst[i]
 
             print(hit_result, '\n')
-
+            if current_time <= record_time:
+                req_dict = c.record_request(content)
+                req_matrix.append(req_dict)
 
         current_time += update_period
 
@@ -78,6 +80,7 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     #
     result = {'total_request': total_request, 'hit_count': hit_result, 'hit_ratio': np.array(hit_result) / total_request}
     print(result)
+    # print(req_matrix[:10])
 
 
 if __name__ == "__main__":
@@ -98,7 +101,7 @@ if __name__ == "__main__":
     departure_rate = 1/60
     request_rate = 1
 
-    num_batches = len(train_loader)
+    #num_batches = len(train_loader)
     num_epochs = 2000
     learning_rate = 0.001
     input_size = 1
@@ -109,7 +112,7 @@ if __name__ == "__main__":
     model = LSTM(input_size, output_size, hidden_size, num_layers)
     c.set_env(server_position, user_position, contents_num, cluster_num, model)
 
-    c.training(learning_rate)
+    #c.training(learning_rate, num_epochs, train_loader, val_loader)
 
     for s in c.server_lst:
         s.communication_r = server_communication_r
