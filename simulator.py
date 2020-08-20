@@ -36,7 +36,14 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     req_matrix = list()
 
     current_time += update_period
+    daily_req = {i: 0 for i in range(num_contents)}
+
     while current_time <= end_time:
+
+        if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
+            c.req_mat.append(daily_req)
+            daily_req = {i: 0 for i in range(num_contents)}
+
         print(current_time)
         requests = np.random.poisson(request_rate)
 
@@ -55,33 +62,14 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
                 hit_result[i] += hit_lst[i]
 
             print(hit_result, '\n')
-            if current_time <= record_time:
-                req_dict = c.record_request(content)
-                req_matrix.append(req_dict)
+
+            daily_req[content] += 1
+
 
         current_time += update_period
 
-
-    # server_request = list()
-    # tmp_hit_ratio = [[] for _ in range(len(c.server_lst))]
-    # for s in c.server_lst:
-    #     total_request += s.total_request
-    #     server_request.append(s.total_request)
-    #     for a in range(len(s.algo_lst)):
-    #         tmp_hit_ratio[s.id].append(hit_result[s.id][a] / s.total_request)
-    #
-    # hit_ratio = list()
-    # for j in range(len(tmp_hit_ratio[0])):
-    #     v = 0
-    #     for i in range(len(tmp_hit_ratio)):
-    #         v += tmp_hit_ratio[i][j]
-    #     v /= len(c.server_lst)
-    #     hit_ratio.append(v)
-    #
     result = {'total_request': total_request, 'hit_count': hit_result, 'hit_ratio': np.array(hit_result) / total_request}
     print(result)
-    # print(req_matrix[:10])
-
 
 if __name__ == "__main__":
     c = Cloud()

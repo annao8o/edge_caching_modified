@@ -44,3 +44,69 @@ class LSTM(nn.Module):
 
         return out
 
+def model_training(m, learning_rate, num_epochs, train_loader, val_loader):
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(m.parameters(), lr=learning_rate)
+
+    trn_loss_list = []
+    val_loss_list = []
+
+    for epoch in range(num_epochs):
+        trn_loss = 0.0
+        for i, data in enumerate(train_loader):
+            x, label = data
+            if is_cuda:
+                x = x.cuda()
+                label = label.cuda()
+            # grad init
+            optimizer.zero_grad()
+            # forward propagation
+            model_output = m(x)
+            # cacualte loss
+            loss = criterion(model_output, label)
+            # back propogation
+            loss.backward()
+            # weight update
+            optimizer.step()
+
+            # trn_loss summary
+            trn_loss += loss.item()
+
+            # #del (memory issue)
+            # del loss
+            # del model_output
+
+        # validation
+        with torch.no_grad():
+            val_loss = 0.0
+            for i, data in enumerate(val_loader):
+                x, val_label = data
+                if is_cuda:
+                    x = x.cuda()
+                    label = label.cuda()
+                val_output = m(x)
+                v_loss = criterion(val_output, val_label)
+                val_loss += v_loss
+
+        # del v_loss
+        # del val_output
+
+        if epoch % 100 == 0:
+            print("Epoch: {} / {} | train_loss: {:.5f} | val_loss: {:.4f}".format(epoch, num_epochs, trn_loss, val_loss))
+
+        trn_loss_list.append(trn_loss)
+        val_loss_list.append(val_loss)
+
+    return trn_loss_list, val_loss_list
+
+def create_sequences(data, seq_length):
+    xs = []
+    ys = []
+
+    for i in range(len(data)-seq_length-1):
+        x = data[i:(i+seq_length)]
+        y = data[i+seq_length]
+        x.append(x)
+        y.append(y)
+
+    return np.array(x), np.array(y)

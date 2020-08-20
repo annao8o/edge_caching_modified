@@ -25,6 +25,7 @@ class Cloud:
         self.user_lst = list()
         self.cluster_num = None
         self.m = None
+        self.req_mat = list()
 
     def set_env(self, server_position, user_position, contents_num, cluster_num, model):
         self.server_position = server_position
@@ -32,6 +33,7 @@ class Cloud:
         self.contents_num = contents_num
         self.cluster_num = cluster_num
         self.m = model
+        self.req_dict = {i:0 for i in range(self.contents_num)}
         self.create_env()
 
     def create_env(self):
@@ -54,69 +56,14 @@ class Cloud:
         self.graph = g
         self.library = np.arange(1, self.contents_num+1)
 
-    def record_request(self, content_id):
-        request_dict = dict()
-        for i in range(self.contents_num):
-            request_dict[i] = 0
+    def record_request(self, daily_req):
+        self.req_mat.append(daily_req)
 
-        request_dict[content_id] += 1
-
-        return request_dict
-
-    def training(self, learning_rate, num_epochs, train_loader, val_loader):
-        criterion = nn.MSELoss()
-        optimizer = torch.optim.Adam(self.m.parameters(), lr=learning_rate)
-
-        trn_loss_list = []
-        val_loss_list = []
-
-        for epoch in range(num_epochs):
-            trn_loss = 0.0
-            for i, data in enumerate(train_loader):
-                x, label = data
-                if is_cuda:
-                    x = x.cuda()
-                    label = label.cuda()
-                # grad init
-                optimizer.zero_grad()
-                # forward propagation
-                model_output = self.m(x)
-                # cacualte loss
-                loss = criterion(model_output, label)
-                # back propogation
-                loss.backward()
-                # weight update
-                optimizer.step()
-
-                # trn_loss summary
-                trn_loss += loss.item()
-
-                # #del (memory issue)
-                # del loss
-                # del model_output
-
-            # validation
-            with torch.no_grad():
-                val_loss = 0.0
-                for i, data in enumerate(val_loader):
-                    x, val_label = data
-                    if is_cuda:
-                        x = x.cuda()
-                        label = label.cuda()
-                    val_output = self.m(x)
-                    v_loss = criterion(val_output, val_label)
-                    val_loss += v_loss
-
-            # del v_loss
-            # del val_output
-
-            if epoch % 100 == 0:
-                print("Epoch: {} / {} | train_loss: {:.5f} | val_loss: {:.4f}".format(epoch, num_epochs, trn_loss, val_loss))
-
-            trn_loss_list.append(trn_loss)
-            val_loss_list.append(val_loss)
-
-        return trn_loss_list, val_loss_list
+    def training(self, learning_rate, num_epochs, data, current_t, window_size):
+        train_data = data[current_t-1-window_size:current_t-1]
+        # train_loader =
+        # val_loader =
+        # model_training(self.m, learning_rate, num_epochs, train_loader, val_loader)
 
     def make_cluster(self):
         p_vectors = list()
