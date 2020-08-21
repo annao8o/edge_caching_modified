@@ -60,10 +60,30 @@ class Cloud:
         self.req_mat.append(daily_req)
 
     def training(self, learning_rate, num_epochs, data, current_t, window_size):
-        train_data = data[current_t-1-window_size:current_t-1]
-        # train_loader =
+        data = self.req_mat[current_t-1-window_size:current_t-1]
+
+        sc = MinMaxScaler()
+        train_data = sc.fit_transform(data)
+
+        seq_length = 7
+        x, y = create_sequences(train_data, seq_length)
+
+        trainX = Variable(torch.Tensor(x))
+        trainY = Variable(torch.Tensor(y))
+
+        batch_size = 100
+
+        train_loader = DataLoader(train_data, shuffle=False, batch_size=batch_size)
         # val_loader =
-        # model_training(self.m, learning_rate, num_epochs, train_loader, val_loader)
+
+        criterion = nn.MSELoss()
+        optimizer = torch.optim.Adam(self.m.parameter(), lr=learning_rate)
+
+        trn_loss_list = model_training(self.m, learning_rate, num_epochs, train_loader)
+
+    def prediction(self):
+        self.m.eval()
+        test_predict = self.m
 
     def make_cluster(self):
         p_vectors = list()
@@ -100,20 +120,20 @@ class Cloud:
         self.asso_server_to_cluster()
 
     def asso_server_to_cluster(self):
-        idx_lst = list()
-        while len(idx_lst) < len(self.server_lst):
-            if len(idx_lst) < self.cluster_num:
-                idx = random.randrange(self.cluster_num)
-                if idx not in idx_lst:
-                    idx_lst.append(idx)
-            else:
-                idx = random.randrange(self.cluster_num)
-                idx_lst.append(idx)
-
-        i = 0
+        # idx_lst = list()
+        # while len(idx_lst) < len(self.server_lst):
+        #     if len(idx_lst) < self.cluster_num:
+        #         idx = random.randrange(self.cluster_num)
+        #         if idx not in idx_lst:
+        #             idx_lst.append(idx)
+        #     else:
+        #         idx = random.randrange(self.cluster_num)
+        #         idx_lst.append(idx)
         for s in self.server_lst:
-            s.asso_cluster(self.cluster_lst[idx_lst[i]])
-            i += 1
+            random.shuffle(self.cluster_lst)
+            for algo in s.algo_lst:
+                if algo.is_cluster:
+                    algo.asso_cluster(self.cluster_lst)
 
 
     def get_most_popular_contents(self):
@@ -180,8 +200,10 @@ class EdgeServer:
         else:
             print('wrong algo class')
 
-    def asso_cluster(self, cluster):
-        self.cluster = cluster
+    # def asso_cluster(self, cluster):
+    #     for algo in self.algo_lst:
+    #         algo.cluster =
+    #     self.cluster = cluster
 
     # def init_caching(self):
     #     for algo in self.algo_lst:
@@ -207,7 +229,7 @@ class EdgeServer:
             else:
                 print("{} >> no hit!".format(algo.id))
                 hit_lst.append(0)
-                algo.replacement_content(content_id)
+                # algo.replacement_content(content_id)
 
         return hit_lst
 

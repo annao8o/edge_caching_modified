@@ -76,6 +76,7 @@ def model_training(m, learning_rate, num_epochs, train_loader, val_loader):
             # del loss
             # del model_output
 
+        '''
         # validation
         with torch.no_grad():
             val_loss = 0.0
@@ -90,14 +91,16 @@ def model_training(m, learning_rate, num_epochs, train_loader, val_loader):
 
         # del v_loss
         # del val_output
+        '''
 
         if epoch % 100 == 0:
-            print("Epoch: {} / {} | train_loss: {:.5f} | val_loss: {:.4f}".format(epoch, num_epochs, trn_loss, val_loss))
+            # print("Epoch: {} / {} | train_loss: {:.5f} | val_loss: {:.4f}".format(epoch, num_epochs, trn_loss, val_loss))
+            print("Epoch: {} / {} | train_loss: {:.5f}".format(epoch, num_epochs, trn_loss))
 
         trn_loss_list.append(trn_loss)
-        val_loss_list.append(val_loss)
+        # val_loss_list.append(val_loss)
 
-    return trn_loss_list, val_loss_list
+    return trn_loss_list
 
 def create_sequences(data, seq_length):
     xs = []

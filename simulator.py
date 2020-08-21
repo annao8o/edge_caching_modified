@@ -23,13 +23,16 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     hit_result = [0 for _ in range(len(c.server_lst[0].algo_lst))]
 
     for s in c.server_lst:
-        print("\nserver: {} / asso_cluster: {}".format(s.id, s.cluster.id))
-
         for algo in s.algo_lst:
+            data_lst = [[] for _ in range(algo.LCU_num)]
             if algo.is_cluster:
-                data_lst = s.cluster.get_popular_contents()
+                print("\nserver: {} / algo: {} / asso_cluster: {}".format(s.id, algo.id, [algo.cluster[k].id for k in
+                                                                                          range(len(algo.cluster))]))
+                for i in range(algo.LCU_num):
+                    data_lst[i] = algo.cluster[i].get_popular_contents()
             else:
-                data_lst = c.get_most_popular_contents()
+                print("\nserver: {} / algo: {}".format(s.id, algo.id))
+                data_lst[0] = c.get_most_popular_contents()
             algo.placement_content(data_lst)
         # s.init_caching()
     total_request = 0
@@ -64,7 +67,6 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             print(hit_result, '\n')
 
             daily_req[content] += 1
-
 
         current_time += update_period
 
@@ -158,6 +160,29 @@ if __name__ == "__main__":
         algo_21 = CacheAlgo()
         algo_21.set_option('algo_21', True, cluster_num, 2000, 1)
 
+        algo_22 = CacheAlgo()
+        algo_22.set_option('algo_22', True, cluster_num, 0, 2)
+        algo_23 = CacheAlgo()
+        algo_23.set_option('algo_23', True, cluster_num, 200, 2)
+        algo_24 = CacheAlgo()
+        algo_24.set_option('algo_24', True, cluster_num, 400, 2)
+        algo_25 = CacheAlgo()
+        algo_25.set_option('algo_25', True, cluster_num, 600, 2)
+        algo_26 = CacheAlgo()
+        algo_26.set_option('algo_26', True, cluster_num, 800, 2)
+        algo_27 = CacheAlgo()
+        algo_27.set_option('algo_27', True, cluster_num, 1000, 2)
+        algo_28 = CacheAlgo()
+        algo_28.set_option('algo_28', True, cluster_num, 1200, 2)
+        algo_29 = CacheAlgo()
+        algo_29.set_option('algo_29', True, cluster_num, 1400, 2)
+        algo_30 = CacheAlgo()
+        algo_30.set_option('algo_30', True, cluster_num, 1600, 2)
+        algo_31 = CacheAlgo()
+        algo_31.set_option('algo_31', True, cluster_num, 1800, 2)
+        algo_32 = CacheAlgo()
+        algo_32.set_option('algo_32', True, cluster_num, 2000, 2)
+
         s.add_algo(algo_0)
         s.add_algo(algo_1)
         s.add_algo(algo_2)
@@ -169,6 +194,7 @@ if __name__ == "__main__":
         s.add_algo(algo_8)
         s.add_algo(algo_9)
         s.add_algo(algo_10)
+
         s.add_algo(algo_11)
         s.add_algo(algo_12)
         s.add_algo(algo_13)
@@ -181,6 +207,18 @@ if __name__ == "__main__":
         s.add_algo(algo_20)
         s.add_algo(algo_21)
 
+        s.add_algo(algo_22)
+        s.add_algo(algo_23)
+        s.add_algo(algo_24)
+        s.add_algo(algo_25)
+        s.add_algo(algo_26)
+        s.add_algo(algo_27)
+        s.add_algo(algo_28)
+        s.add_algo(algo_29)
+        s.add_algo(algo_30)
+        s.add_algo(algo_31)
+        s.add_algo(algo_32)
+
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -190,7 +228,7 @@ if __name__ == "__main__":
         ax.annotate(s.id, xy=s.position)
         circle = plt.Circle(s.position, s.communication_r, edgecolor='r', facecolor='None', alpha=0.5)
         ax.add_artist(circle)
-        print(s.id, s.user_lst)
+        # print(s.id, s.user_lst)
     plt.xlabel('x')
     plt.ylabel('y')
     plt.show()
