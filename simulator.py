@@ -19,7 +19,7 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     # print("kmeans label:{}".format(cluster_label))
 
     current_time = datetime(2000, 1, 1, hour=6, minute=0, second=0)
-    record_time = datetime(2000, 1, 1, hour=15, minute=0, second=0)
+    # record_time = datetime(2000, 1, 1, hour=15, minute=0, second=0)
     hit_result = [0 for _ in range(len(c.server_lst[0].algo_lst))]
 
     for s in c.server_lst:
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     z_val = 1.0
     arrival_rate = 1
     departure_rate = 1/60
-    request_rate = 1
+    request_rate = 10
 
     #num_batches = len(train_loader)
     num_epochs = 2000
@@ -183,41 +183,41 @@ if __name__ == "__main__":
         algo_32 = CacheAlgo()
         algo_32.set_option('algo_32', True, cluster_num, 2000, 2)
 
-        s.add_algo(algo_0)
-        s.add_algo(algo_1)
-        s.add_algo(algo_2)
-        s.add_algo(algo_3)
-        s.add_algo(algo_4)
+        # s.add_algo(algo_0)
+        # s.add_algo(algo_1)
+        # s.add_algo(algo_2)
+        # s.add_algo(algo_3)
+        # s.add_algo(algo_4)
         s.add_algo(algo_5)
-        s.add_algo(algo_6)
-        s.add_algo(algo_7)
-        s.add_algo(algo_8)
-        s.add_algo(algo_9)
-        s.add_algo(algo_10)
-
-        s.add_algo(algo_11)
-        s.add_algo(algo_12)
-        s.add_algo(algo_13)
-        s.add_algo(algo_14)
-        s.add_algo(algo_15)
+        # s.add_algo(algo_6)
+        # s.add_algo(algo_7)
+        # s.add_algo(algo_8)
+        # s.add_algo(algo_9)
+        # s.add_algo(algo_10)
+        #
+        # s.add_algo(algo_11)
+        # s.add_algo(algo_12)
+        # s.add_algo(algo_13)
+        # s.add_algo(algo_14)
+        # s.add_algo(algo_15)
         s.add_algo(algo_16)
-        s.add_algo(algo_17)
-        s.add_algo(algo_18)
-        s.add_algo(algo_19)
-        s.add_algo(algo_20)
-        s.add_algo(algo_21)
+        # s.add_algo(algo_17)
+        # s.add_algo(algo_18)
+        # s.add_algo(algo_19)
+        # s.add_algo(algo_20)
+        # s.add_algo(algo_21)
 
-        s.add_algo(algo_22)
-        s.add_algo(algo_23)
-        s.add_algo(algo_24)
-        s.add_algo(algo_25)
-        s.add_algo(algo_26)
+        # s.add_algo(algo_22)
+        # s.add_algo(algo_23)
+        # s.add_algo(algo_24)
+        # s.add_algo(algo_25)
+        # s.add_algo(algo_26)
         s.add_algo(algo_27)
-        s.add_algo(algo_28)
-        s.add_algo(algo_29)
-        s.add_algo(algo_30)
-        s.add_algo(algo_31)
-        s.add_algo(algo_32)
+        # s.add_algo(algo_28)
+        # s.add_algo(algo_29)
+        # s.add_algo(algo_30)
+        # s.add_algo(algo_31)
+        # s.add_algo(algo_32)
 
 
     fig = plt.figure()
