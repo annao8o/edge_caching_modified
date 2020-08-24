@@ -7,6 +7,7 @@ import copy
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 from prediction_model import *
+from math import hypot
 import math
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -23,11 +24,17 @@ class Cloud:
         self.cluster_lst = list()
         self.graph = None
         self.user_lst = list()
+        self.moved_users = list()   #user mobility (arrive/depart) 관리하기 위한 list
         self.cluster_num = None
         self.m = None
         self.req_mat = list()
+        self.total_arrive = None
+        self.total_depart = None
+        self.cluster_centers = None
 
     def set_env(self, server_position, user_position, contents_num, cluster_num, model):
+        self.total_arrive = 0
+        self.total_depart = 0
         self.server_position = server_position
         self.user_position = user_position
         self.contents_num = contents_num
@@ -58,6 +65,43 @@ class Cloud:
 
     def record_request(self, daily_req):
         self.req_mat.append(daily_req)
+
+    def arrive(self, time, duration):
+        # position = ???
+        u = User(len(self.user_lst) + 1)
+        u.make_pref(1.0, self.contents_num)
+        # self.assign_cluster(u)
+
+        self.user_lst.append(u)
+
+        expirate_time = time + duration
+        new_user = (expirate_time, u)
+
+        self.moved_users.append(new_user)
+        self.moved_users = sorted(self.moved_users, key=lambda users: users[0])
+
+        self.total_arrive += 1
+        self.users_num += 1
+
+        # for algo in self.algo_lst:
+        #     algo.arrive_user(new_user[1])  # new_user 객체를 넘겨줌
+
+    def depart(self):
+        if self.moved_users:
+            d_u = self.moved_users.pop(0)
+            self.total_depart += 1
+            # self.user_lst.pop()   <- user index 어떻게 가져올까?
+            return d_u[1]
+
+    def update(self, time):
+        depart_user_lst = list()
+        while self.moved_users:
+            if self.moved_users[0][0] <= time:
+                depart_user_lst.append(self.depart())
+            else:
+                break
+
+        # return depart_user_lst
 
     def training(self, learning_rate, num_epochs, data, current_t, window_size):
         data = self.req_mat[current_t-1-window_size:current_t-1]
@@ -100,6 +144,7 @@ class Cloud:
 
         kmeans = KMeans(n_clusters=n_cluster, init='random', algorithm='auto')
         kmeans.fit(pca_data)
+        self.cluster_centers = kmeans.cluster_centers_
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -118,6 +163,26 @@ class Cloud:
 
             cluster.cal_p_k(self.contents_num)
         self.asso_server_to_cluster()
+
+    # def assign_cluster(self, user):
+    #     if self.cluster_num > 1:
+    #         tmp = []
+    #         data = user.pref_vec
+    #
+    #         for i in range(len(self.cluster_centers)):
+    #             dist = hypot(data[0] - self.cluster_centers[i][0], data[1] - self.cluster_centers[i][1])
+    #             tmp.append(dist)
+    #         nearest = tmp[0]
+    #         idx = 0
+    #         for i in range(len(tmp)):
+    #             if tmp[i] < nearest:
+    #                 nearest = tmp[i]
+    #                 idx = i
+    #     else:
+    #         idx = 0
+    #
+    #     self.label_lst[idx].append(new_user.userId)
+
 
     def asso_server_to_cluster(self):
         # idx_lst = list()

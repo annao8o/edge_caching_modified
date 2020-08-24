@@ -43,11 +43,21 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
 
     while current_time <= end_time:
 
+        # generate the users randomly
+        arrive_user = np.random.poisson(arrival_rate)
+        for _ in range(arrive_user):
+            d_minute = np.random.exponential(1 / departure_rate)
+            d_minute = round(d_minute)
+            duration = timedelta(minutes=d_minute)
+            c.arrive(current_time, duration)
+
         if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
             c.req_mat.append(daily_req)
             daily_req = {i: 0 for i in range(num_contents)}
 
         print(current_time)
+
+        # generate the requests randomly (각 서버의 p_k에 따라 request 생성하는 것으로 수정 필요)
         requests = np.random.poisson(request_rate)
 
         req_user = list()
@@ -68,6 +78,8 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
 
             daily_req[content] += 1
 
+        # update the current users based on their departure time
+        c.update(current_time)
         current_time += update_period
 
     result = {'total_request': total_request, 'hit_count': hit_result, 'hit_ratio': np.array(hit_result) / total_request}
