@@ -224,8 +224,12 @@ class Cloud:
                 data_lst[i] += u.pref_vec[i]
 
         idx_p_tuple = list()
+        tmp = list()
         for i,v in enumerate(data_lst):
             idx_p_tuple.append((i, v))
+            tmp.append(v)
+
+        print(tmp)
 
         # sort
         idx_p_tuple.sort(key=lambda t: t[1], reverse=True)
@@ -253,8 +257,12 @@ class Cluster:
 
     def get_popular_contents(self):
         idx_p_tuple = list()
+        tmp = list()
         for i,v in enumerate(self.p_k):
             idx_p_tuple.append((i, v))
+            tmp.append(v)
+
+        print(tmp)
 
         # sort
         idx_p_tuple.sort(key=lambda t:t[1], reverse=True)

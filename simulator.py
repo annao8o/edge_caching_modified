@@ -22,6 +22,12 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     # record_time = datetime(2000, 1, 1, hour=15, minute=0, second=0)
     hit_result = [0 for _ in range(len(c.server_lst[0].algo_lst))]
 
+    # c.get_most_popular_contents()
+    # for i in c.cluster_lst:
+    #     print(i.id)
+    #     i.get_popular_contents()
+
+
     for s in c.server_lst:
         for algo in s.algo_lst:
             data_lst = [[] for _ in range(algo.LCU_num)]
@@ -86,6 +92,7 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     result = {'total_request': total_request, 'hit_count': hit_result, 'hit_ratio': np.array(hit_result) / total_request}
     print(result)
 
+
 if __name__ == "__main__":
     c = Cloud()
 
@@ -102,7 +109,7 @@ if __name__ == "__main__":
     z_val = 1.0
     arrival_rate = 1
     departure_rate = 1/60
-    request_rate = 30
+    request_rate = 10
 
     #num_batches = len(train_loader)
     num_epochs = 2000
@@ -198,8 +205,8 @@ if __name__ == "__main__":
 
         # s.add_algo(algo_0)
         # s.add_algo(algo_1)
-        # s.add_algo(algo_2)
-        s.add_algo(algo_3)
+        s.add_algo(algo_2)
+        # s.add_algo(algo_3)
         # s.add_algo(algo_4)
         # s.add_algo(algo_5)
         # s.add_algo(algo_6)
@@ -219,6 +226,7 @@ if __name__ == "__main__":
         # s.add_algo(algo_19)
         # s.add_algo(algo_20)
         # s.add_algo(algo_21)
+
         # s.add_algo(algo_22)
         # s.add_algo(algo_23)
         # s.add_algo(algo_24)
