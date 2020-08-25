@@ -323,16 +323,24 @@ class User:
     def set_cluster(self, cluster_id):
         self.cluster = cluster_id
 
-    def request(self, content_id):
+    def request(self, zipf_random):
+        idx_p_tuple = list()
+        for i, v in enumerate(self.pref_vec):
+            idx_p_tuple.append((i, v))  #i: index, v: popularity
+
+        # sort
+        idx_p_tuple.sort(key=lambda t: t[1], reverse=True)
+        popularity_sorted = [e[0] for e in idx_p_tuple]
+
         hit_lst = [0 for _ in range(len(self.capable_server_lst[0].algo_lst))]
         if len(self.capable_server_lst) > 0:
             for s in self.capable_server_lst:
-                print("user {} requests the content {} at server {}".format(self.id, content_id, s.id))
-                tmp = s.request_content(content_id)
+                print("user {} requests the content {} at server {}".format(self.id, popularity_sorted[zipf_random], s.id))
+                tmp = s.request_content(popularity_sorted[zipf_random])
                 for i in range(len(hit_lst)):
                     if hit_lst[i] < 1:
                         hit_lst[i] += tmp[i]
-        return hit_lst
+        return popularity_sorted[zipf_random], hit_lst
 
 class PPP:
     def __init__(self):

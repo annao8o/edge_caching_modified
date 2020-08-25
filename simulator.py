@@ -43,6 +43,7 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
 
     while current_time <= end_time:
 
+        '''
         # generate the users randomly
         arrive_user = np.random.poisson(arrival_rate)
         for _ in range(arrive_user):
@@ -50,7 +51,9 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             d_minute = round(d_minute)
             duration = timedelta(minutes=d_minute)
             c.arrive(current_time, duration)
+        '''
 
+        # 하루마다 daily_req 초기화
         if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
             c.req_mat.append(daily_req)
             daily_req = {i: 0 for i in range(num_contents)}
@@ -68,15 +71,15 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
 
         for u in req_user:
             total_request += 1
-            content = zipf.get_sample()
-            hit_lst = u.request(content)
+            zipf_random = zipf.get_sample()
+            requested_content, hit_lst = u.request(zipf_random)
             print(hit_lst)
             for i in range(len(hit_lst)):
                 hit_result[i] += hit_lst[i]
 
             print(hit_result, '\n')
 
-            daily_req[content] += 1
+            daily_req[requested_content] += 1
 
         # update the current users based on their departure time
         c.update(current_time)
@@ -97,7 +100,7 @@ if __name__ == "__main__":
     # user_num = 200
     contents_num = 2000
     cluster_num = 3
-    server_communication_r = 0.5
+    server_communication_r = 1.0
     z_val = 1.0
     arrival_rate = 1
     departure_rate = 1/60
@@ -198,9 +201,9 @@ if __name__ == "__main__":
         # s.add_algo(algo_0)
         # s.add_algo(algo_1)
         # s.add_algo(algo_2)
-        # s.add_algo(algo_3)
+        s.add_algo(algo_3)
         # s.add_algo(algo_4)
-        s.add_algo(algo_5)
+        # s.add_algo(algo_5)
         # s.add_algo(algo_6)
         # s.add_algo(algo_7)
         # s.add_algo(algo_8)
@@ -210,21 +213,20 @@ if __name__ == "__main__":
         # s.add_algo(algo_11)
         # s.add_algo(algo_12)
         # s.add_algo(algo_13)
-        # s.add_algo(algo_14)
+        s.add_algo(algo_14)
         # s.add_algo(algo_15)
-        s.add_algo(algo_16)
+        # s.add_algo(algo_16)
         # s.add_algo(algo_17)
         # s.add_algo(algo_18)
         # s.add_algo(algo_19)
         # s.add_algo(algo_20)
         # s.add_algo(algo_21)
-
         # s.add_algo(algo_22)
         # s.add_algo(algo_23)
         # s.add_algo(algo_24)
-        # s.add_algo(algo_25)
+        s.add_algo(algo_25)
         # s.add_algo(algo_26)
-        s.add_algo(algo_27)
+        # s.add_algo(algo_27)
         # s.add_algo(algo_28)
         # s.add_algo(algo_29)
         # s.add_algo(algo_30)
