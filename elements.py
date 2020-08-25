@@ -67,10 +67,21 @@ class Cloud:
         self.req_mat.append(daily_req)
 
     def arrive(self, time, duration):
-        # position = ???
-        u = User(len(self.user_lst) + 1)
+        # user 위치 랜덤으로 지정
+        p = random.random() * 2 * math.pi
+        r = 3 * math.sqrt(random.random())
+        x = math.cos(p) * r
+        y = math.sin(p) * r
+        position = (x, y)
+        u = User(len(self.user_lst) + 1, position)
         u.make_pref(1.0, self.contents_num)
         # self.assign_cluster(u)
+
+        for s in self.server_lst:
+            if (s.position[0] - u.position[0])**2 + (s.position[1] - u.position[1])**2 <= s.communication_r**2:
+                s.user_lst.append(u)
+                u.capable_server_lst.append(s)
+                u.state = True
 
         self.user_lst.append(u)
 
@@ -81,7 +92,7 @@ class Cloud:
         self.moved_users = sorted(self.moved_users, key=lambda users: users[0])
 
         self.total_arrive += 1
-        self.users_num += 1
+        print('User {} arrives at {} (from {} to {})'.format(u.id, u.position, time, expirate_time))
 
         # for algo in self.algo_lst:
         #     algo.arrive_user(new_user[1])  # new_user 객체를 넘겨줌
@@ -90,7 +101,12 @@ class Cloud:
         if self.moved_users:
             d_u = self.moved_users.pop(0)
             self.total_depart += 1
-            # self.user_lst.pop()   <- user index 어떻게 가져올까?
+            self.user_lst.remove(d_u[1])
+            if d_u[1].state:
+                for s in d_u[1].capable_server_lst:
+                    if d_u[1] in s.user_lst:
+                        s.user_lst.remove(d_u[1])
+            print("user {} departs.".format(d_u[1].id))
             return d_u[1]
 
     def update(self, time):

@@ -43,7 +43,6 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
 
     while current_time <= end_time:
 
-        '''
         # generate the users randomly
         arrive_user = np.random.poisson(arrival_rate)
         for _ in range(arrive_user):
@@ -51,7 +50,6 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             d_minute = round(d_minute)
             duration = timedelta(minutes=d_minute)
             c.arrive(current_time, duration)
-        '''
 
         # 하루마다 daily_req 초기화
         if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
@@ -104,7 +102,7 @@ if __name__ == "__main__":
     z_val = 1.0
     arrival_rate = 1
     departure_rate = 1/60
-    request_rate = 10
+    request_rate = 30
 
     #num_batches = len(train_loader)
     num_epochs = 2000
