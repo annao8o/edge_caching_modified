@@ -61,6 +61,7 @@ class CacheAlgo:
         return hit
 
     def replacement_content(self, new_content_id):
+        evict_content = -1
         if self.replacement_method == "None":
             pass
         elif self.replacement_method == "LRU":
@@ -70,4 +71,13 @@ class CacheAlgo:
         elif self.replacement_method == "FIFO":
             pass
         elif self.replacement_method == "PREDICTION":
-            pass
+            for i in range(len(self.cluster)):
+                p_stack = sorted(self.cluster[i].popualrity_dict.items(), key=lambda item:item[1])
+                least_id, least_p = p_stack[0]     #predicted popularity stack에서 least 인 것 하나 가져옴
+                new_p = self.cluster[i].popularity_dict[new_content_id]
+                if least_p < new_p:
+                    evict_content = least_id
+                    self.cached_contents_lst.remove(least_id)   #캐시에서 popularity가 가장 낮은 content 삭제
+                    self.cached_contents_lst.append(new_p)      #new content 삽입
+
+        print("Evict: {} / New: {}".format(evict_content, new_content_id))

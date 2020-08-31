@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 from prediction_model import *
 from math import hypot
 import math
+from sklearn.preprocessing import StandardScaler
 from mpl_toolkits.mplot3d import Axes3D
 
 np.random.seed(0)
@@ -92,10 +93,7 @@ class Cloud:
         self.moved_users = sorted(self.moved_users, key=lambda users: users[0])
 
         self.total_arrive += 1
-        print('User {} arrives at {} (from {} to {})'.format(u.id, u.position, time, expirate_time))
-
-        # for algo in self.algo_lst:
-        #     algo.arrive_user(new_user[1])  # new_user 객체를 넘겨줌
+        # print('User {} arrives at {} (from {} to {})'.format(u.id, u.position, time, expirate_time))
 
     def depart(self):
         if self.moved_users:
@@ -145,10 +143,43 @@ class Cloud:
         self.m.eval()
         test_predict = self.m
 
+        for cluster in self.cluster_lst:
+            cluster.popularity_dict
+
     def make_cluster(self):
         p_vectors = list()
         for user in self.user_lst:
             p_vectors.append(user.pref_vec)
+
+        df = pd.DataFrame(p_vectors, columns=np.arange(0, self.contents_num))
+        print(df.head())
+
+        scaler = StandardScaler()
+        df = pd.DataFrame(scaler.fit_transform(df))
+
+        df.columns = np.arange(0, self.contents_num)
+        kmeans = KMeans(n_clusters=self.cluster_num)
+        kmeans.fit(df)
+        clusters = kmeans.predict(df)
+
+        df['cluster'] = clusters
+
+        pca = PCA(n_components=2)
+        pca_data = pd.DataFrame(pca.fit_transform(df.drop(['cluster'], axis=1)))
+
+        pca_data.columns = ['X', 'Y']
+
+        cluster0 = pca_data[df["cluster"] == 0]
+        cluster1 = pca_data[df["cluster"] == 1]
+        cluster2 = pca_data[df["cluster"] == 2]
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.scatter(cluster0['X'], cluster0['Y'], c='r', alpha=0.5, label='Cluster 0')
+        ax.scatter(cluster1['X'], cluster1['Y'], c='g', alpha=0.5, label='Cluster 1')
+        ax.scatter(cluster2['X'], cluster2['Y'], c='b', alpha=0.5, label='Cluster 2')
+
+        plt.show()
 
         # for i in range(self.cluster_num[0], self.cluster_num[1]):
         #n_cluster = int(self.cluster_num[0])
@@ -159,15 +190,17 @@ class Cloud:
         pca_data = pca.fit_transform(p_vectors)
 
         kmeans = KMeans(n_clusters=n_cluster, init='random', algorithm='auto')
-        kmeans.fit(pca_data)
+        kmeans.fit(p_vectors)
         self.cluster_centers = kmeans.cluster_centers_
 
+        '''
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.scatter(pca_data[:, 0], pca_data[:, 1], c=kmeans.labels_.astype(float), alpha=0.5)
-        for i in range(len(pca_data)):
-            ax.annotate(str(i), xy=(pca_data[i][0], pca_data[i][1]))
+        # for i in range(len(pca_data)):
+        #     ax.annotate(str(i), xy=(pca_data[i][0], pca_data[i][1]))
         plt.show()
+        '''
 
         for i in range(len(self.user_lst)):
             self.user_lst[i].set_cluster(kmeans.labels_[i])
@@ -218,18 +251,26 @@ class Cloud:
 
 
     def get_most_popular_contents(self):
+
+        # z = Zipf()
+        # z.set_env(1.0, self.contents_num)
+        #
+        # print("global", z.pdf)
+
         data_lst = [0 for _ in range(self.contents_num)]
+        
         for u in self.user_lst:
             for i in range(len(data_lst)):
                 data_lst[i] += u.pref_vec[i]
 
+        data_lst_ = [element / len(self.user_lst) for element in data_lst]
+        print('global', data_lst_)
+
         idx_p_tuple = list()
         tmp = list()
-        for i,v in enumerate(data_lst):
+        for i,v in enumerate(data_lst_):
             idx_p_tuple.append((i, v))
-            tmp.append(v)
 
-        print(tmp)
 
         # sort
         idx_p_tuple.sort(key=lambda t: t[1], reverse=True)
@@ -241,6 +282,7 @@ class Cluster:
     def __init__(self, id):
         self.id = id
         self.p_k = None
+        self.popularity_dict = dict()
         self.cluster_users = list()
 
     def add_user(self, user):
@@ -253,6 +295,8 @@ class Cluster:
                 tmp[i] += u.pref_vec[i]
 
         self.p_k = [element / len(self.cluster_users) for element in tmp]
+        print(self.id, self.p_k)
+
         return self.p_k
 
     def get_popular_contents(self):
@@ -318,7 +362,7 @@ class EdgeServer:
             else:
                 print("{} >> no hit!".format(algo.id))
                 hit_lst.append(0)
-                # algo.replacement_content(content_id)
+                algo.replacement_content(content_id)
 
         return hit_lst
 
@@ -326,6 +370,7 @@ class EdgeServer:
 class User:
     def __init__(self, id, position):
         self.position = position
+        self.cdf = None
         self.pref_vec = list()
         self.cluster = None
         self.id = id
@@ -333,21 +378,68 @@ class User:
         self.state = False
 
     def make_pref(self, z_val, contents_num):
-        self.pref_vec = [0 for _ in range(contents_num)]
 
-        z = Zipf()
-        z.set_env(z_val, contents_num)
-        idx_lst = np.arange(0, contents_num)
-        np.random.shuffle(idx_lst)
-        tmp = copy.copy(z.pdf)
+        temp = np.power(np.arange(1, contents_num + 1), -z_val)
+        np.random.shuffle(temp)
+        zeta = np.r_[0.0, np.cumsum(temp)]
+        # pdf = [x / zeta[-1] for x in temp]
+        self.cdf = [x / zeta[-1] for x in zeta]
+
+        f = np.random.random(contents_num)
+        v = np.searchsorted(self.cdf, f)
+        samples = [t-1 for t in v]
 
         for i in range(contents_num):
-            self.pref_vec[idx_lst[i]] = tmp[i]
+            self.pref_vec.append(samples.count(i) / contents_num)
+
+        print(self.pref_vec)
+
+        # z = Zipf()
+        # z.set_env(1.0, contents_num)
+
+        # tmp = list()
+        # for _ in range(contents_num):
+        #     tmp.append(z.get_sample())
+        #
+        # tmp_ = list()
+        # for i in range(contents_num):
+        #     tmp_.append(tmp.count(i) / contents_num)
+        #
+        # self.pref_vec = tmp_
+        # print(self.pref_vec)
+        #
+        # del tmp
+        # del tmp_
+
+
+        # np.random.shuffle(z.pdf)
+        # self.pref_vec = z.pdf
+        # print(self.pref_vec)
+        # idx_lst = np.arange(0, contents_num)
+        # np.random.shuffle(idx_lst)
+        # tmp = copy.copy(z.pdf)
+        #
+        # for i in range(contents_num):
+        #     self.pref_vec[idx_lst[i]] = tmp[i]
 
     def set_cluster(self, cluster_id):
         self.cluster = cluster_id
 
-    def request(self, zipf_random):
+    def request(self):
+        f = np.random.random()
+        content = np.searchsorted(self.cdf, f) - 1
+
+        hit_lst = [0 for _ in range(len(self.capable_server_lst[0].algo_lst))]
+        if len(self.capable_server_lst) > 0:
+            for s in self.capable_server_lst:
+                print("user {} requests the content {} at server {}".format(self.id, content, s.id))
+                tmp = s.request_content(content)
+                for i in range(len(hit_lst)):
+                    if hit_lst[i] < 1:
+                        hit_lst[i] += tmp[i]
+
+        return content, hit_lst
+
         idx_p_tuple = list()
         for i, v in enumerate(self.pref_vec):
             idx_p_tuple.append((i, v))  #i: index, v: popularity
@@ -413,8 +505,7 @@ class Zipf:
         self.cdf = [x / zeta[-1] for x in zeta]
 
     def get_sample(self):
-        f = random.random()
-        print(f)
+        f = np.random.random()
         return np.searchsorted(self.cdf, f) - 1
 
 
