@@ -15,6 +15,7 @@ from mpl_toolkits.mplot3d import Axes3D
 np.random.seed(0)
 random.seed(0)
 
+
 class Cloud:
     def __init__(self):
         self.library = None
@@ -25,7 +26,7 @@ class Cloud:
         self.cluster_lst = list()
         self.graph = None
         self.user_lst = list()
-        self.moved_users = list()   #user mobility (arrive/depart) 관리하기 위한 list
+        self.moved_users = list()  # user mobility (arrive/depart) 관리하기 위한 list
         self.cluster_num = None
         self.m = None
         self.req_mat = list()
@@ -41,7 +42,7 @@ class Cloud:
         self.contents_num = contents_num
         self.cluster_num = cluster_num
         self.m = model
-        self.req_dict = {i:0 for i in range(self.contents_num)}
+        self.req_dict = {i: 0 for i in range(self.contents_num)}
         self.create_env()
 
     def create_env(self):
@@ -62,7 +63,7 @@ class Cloud:
             self.cluster_lst.append(cluster)
 
         self.graph = g
-        self.library = np.arange(1, self.contents_num+1)
+        self.library = np.arange(1, self.contents_num + 1)
 
     def record_request(self, daily_req):
         self.req_mat.append(daily_req)
@@ -76,10 +77,10 @@ class Cloud:
         position = (x, y)
         u = User(len(self.user_lst) + 1, position)
         u.make_pref(1.0, self.contents_num)
-        # self.assign_cluster(u)
+        cluster_id = self.assign_cluster(u)
 
         for s in self.server_lst:
-            if (s.position[0] - u.position[0])**2 + (s.position[1] - u.position[1])**2 <= s.communication_r**2:
+            if (s.position[0] - u.position[0]) ** 2 + (s.position[1] - u.position[1]) ** 2 <= s.communication_r ** 2:
                 s.user_lst.append(u)
                 u.capable_server_lst.append(s)
                 u.state = True
@@ -94,6 +95,7 @@ class Cloud:
 
         self.total_arrive += 1
         # print('User {} arrives at {} (from {} to {})'.format(u.id, u.position, time, expirate_time))
+        return cluster_id
 
     def depart(self):
         if self.moved_users:
@@ -118,7 +120,7 @@ class Cloud:
         # return depart_user_lst
 
     def training(self, learning_rate, num_epochs, data, current_t, window_size):
-        data = self.req_mat[current_t-1-window_size:current_t-1]
+        data = self.req_mat[current_t - 1 - window_size:current_t - 1]
 
         sc = MinMaxScaler()
         train_data = sc.fit_transform(data)
@@ -151,56 +153,54 @@ class Cloud:
         for user in self.user_lst:
             p_vectors.append(user.pref_vec)
 
-        df = pd.DataFrame(p_vectors, columns=np.arange(0, self.contents_num))
-        print(df.head())
-
-        scaler = StandardScaler()
-        df = pd.DataFrame(scaler.fit_transform(df))
-
-        df.columns = np.arange(0, self.contents_num)
-        kmeans = KMeans(n_clusters=self.cluster_num)
-        kmeans.fit(df)
-        clusters = kmeans.predict(df)
-
-        df['cluster'] = clusters
-
-        pca = PCA(n_components=2)
-        pca_data = pd.DataFrame(pca.fit_transform(df.drop(['cluster'], axis=1)))
-
-        pca_data.columns = ['X', 'Y']
-
-        cluster0 = pca_data[df["cluster"] == 0]
-        cluster1 = pca_data[df["cluster"] == 1]
-        cluster2 = pca_data[df["cluster"] == 2]
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(cluster0['X'], cluster0['Y'], c='r', alpha=0.5, label='Cluster 0')
-        ax.scatter(cluster1['X'], cluster1['Y'], c='g', alpha=0.5, label='Cluster 1')
-        ax.scatter(cluster2['X'], cluster2['Y'], c='b', alpha=0.5, label='Cluster 2')
-
-        plt.show()
+        # df = pd.DataFrame(p_vectors, columns=np.arange(0, self.contents_num))
+        # print(df.head())
+        #
+        # scaler = StandardScaler()
+        # df = pd.DataFrame(scaler.fit_transform(df))
+        #
+        # df.columns = np.arange(0, self.contents_num)
+        # kmeans = KMeans(n_clusters=self.cluster_num)
+        # kmeans.fit(df)
+        # clusters = kmeans.predict(df)
+        #
+        # df['cluster'] = clusters
+        #
+        # pca = PCA(n_components=2)
+        # pca_data = pd.DataFrame(pca.fit_transform(df.drop(['cluster'], axis=1)))
+        #
+        # pca_data.columns = ['X', 'Y']
+        #
+        # cluster0 = pca_data[df["cluster"] == 0]
+        # cluster1 = pca_data[df["cluster"] == 1]
+        # cluster2 = pca_data[df["cluster"] == 2]
+        #
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(cluster0['X'], cluster0['Y'], c='r', alpha=0.5, label='Cluster 0')
+        # ax.scatter(cluster1['X'], cluster1['Y'], c='g', alpha=0.5, label='Cluster 1')
+        # ax.scatter(cluster2['X'], cluster2['Y'], c='b', alpha=0.5, label='Cluster 2')
+        #
+        # plt.show()
 
         # for i in range(self.cluster_num[0], self.cluster_num[1]):
-        #n_cluster = int(self.cluster_num[0])
+        # n_cluster = int(self.cluster_num[0])
         n_cluster = self.cluster_num
 
-        ## dimension reduction (PCA) for visualization
-        pca = PCA(n_components=2)
-        pca_data = pca.fit_transform(p_vectors)
+        # # dimension reduction (PCA) for visualization
+        # pca = PCA(n_components=2)
+        # pca_data = pca.fit_transform(p_vectors)
 
         kmeans = KMeans(n_clusters=n_cluster, init='random', algorithm='auto')
         kmeans.fit(p_vectors)
         self.cluster_centers = kmeans.cluster_centers_
 
-        '''
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(pca_data[:, 0], pca_data[:, 1], c=kmeans.labels_.astype(float), alpha=0.5)
-        # for i in range(len(pca_data)):
-        #     ax.annotate(str(i), xy=(pca_data[i][0], pca_data[i][1]))
-        plt.show()
-        '''
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111)
+        # ax.scatter(pca_data[:, 0], pca_data[:, 1], c=kmeans.labels_.astype(float), alpha=0.5)
+        # # for i in range(len(pca_data)):
+        # #     ax.annotate(str(i), xy=(pca_data[i][0], pca_data[i][1]))
+        # plt.show()
 
         for i in range(len(self.user_lst)):
             self.user_lst[i].set_cluster(kmeans.labels_[i])
@@ -213,25 +213,41 @@ class Cloud:
             cluster.cal_p_k(self.contents_num)
         self.asso_server_to_cluster()
 
-    # def assign_cluster(self, user):
-    #     if self.cluster_num > 1:
-    #         tmp = []
-    #         data = user.pref_vec
-    #
-    #         for i in range(len(self.cluster_centers)):
-    #             dist = hypot(data[0] - self.cluster_centers[i][0], data[1] - self.cluster_centers[i][1])
-    #             tmp.append(dist)
-    #         nearest = tmp[0]
-    #         idx = 0
-    #         for i in range(len(tmp)):
-    #             if tmp[i] < nearest:
-    #                 nearest = tmp[i]
-    #                 idx = i
-    #     else:
-    #         idx = 0
-    #
-    #     self.label_lst[idx].append(new_user.userId)
+    def assign_cluster(self, user):
+        if self.cluster_num > 1:
+            tmp = []
+            data = user.pref_vec
+            # data = np.reshape(user.pref_vec, (2, -1))
+            # data = StandardScaler().fit_transform(data)
 
+            # pca = PCA(n_components=2)
+            # pca_data = pca.fit_transform(data)
+
+            for i in range(len(self.cluster_centers)):
+                sum = 0
+                for j in range(len(data)):
+                    # dist = abs(pca_data-self.cluster_centers[i])
+                    sum += (data[j] - self.cluster_centers[i][j])**2
+                dist = math.sqrt(sum)
+                    # dist = hypot(pca_data[0] - self.cluster_centers[i][0], pca_data[1] - self.cluster_centers[i][1])
+                tmp.append(dist)
+
+            nearest = tmp[0]
+            idx = 0
+            for i in range(len(tmp)):
+                if tmp[i] < nearest:
+                    nearest = tmp[i]
+                    idx = i
+        # else:
+        #     idx = 0
+
+        user.cluster = idx
+
+        #new user를 cluster에 넣어주기
+        self.cluster_lst[idx].cluster_users.append(user)
+
+        print(idx)
+        return idx
 
     def asso_server_to_cluster(self):
         # idx_lst = list()
@@ -249,7 +265,6 @@ class Cloud:
                 if algo.is_cluster:
                     algo.asso_cluster(self.cluster_lst)
 
-
     def get_most_popular_contents(self):
 
         # z = Zipf()
@@ -258,7 +273,7 @@ class Cloud:
         # print("global", z.pdf)
 
         data_lst = [0 for _ in range(self.contents_num)]
-        
+
         for u in self.user_lst:
             for i in range(len(data_lst)):
                 data_lst[i] += u.pref_vec[i]
@@ -268,9 +283,8 @@ class Cloud:
 
         idx_p_tuple = list()
         tmp = list()
-        for i,v in enumerate(data_lst_):
+        for i, v in enumerate(data_lst_):
             idx_p_tuple.append((i, v))
-
 
         # sort
         idx_p_tuple.sort(key=lambda t: t[1], reverse=True)
@@ -282,7 +296,8 @@ class Cluster:
     def __init__(self, id):
         self.id = id
         self.p_k = None
-        self.popularity_dict = dict()
+        self.predicted_p = None
+        self.req_cnt_mat = list()
         self.cluster_users = list()
 
     def add_user(self, user):
@@ -302,17 +317,19 @@ class Cluster:
     def get_popular_contents(self):
         idx_p_tuple = list()
         tmp = list()
-        for i,v in enumerate(self.p_k):
+        for i, v in enumerate(self.p_k):
             idx_p_tuple.append((i, v))
             tmp.append(v)
 
         print(tmp)
 
         # sort
-        idx_p_tuple.sort(key=lambda t:t[1], reverse=True)
+        idx_p_tuple.sort(key=lambda t: t[1], reverse=True)
         popularity_sorted = [e[0] for e in idx_p_tuple]
         return popularity_sorted
 
+    def set_predicted_p(self):
+        self.predicted_p = pd.read_pickle('prediction_result_mat('+str(self.id)+').pickle')
 
 class EdgeServer:
     def __init__(self, id, position):
@@ -362,7 +379,7 @@ class EdgeServer:
             else:
                 print("{} >> no hit!".format(algo.id))
                 hit_lst.append(0)
-                algo.replacement_content(content_id)
+                # algo.replacement_content(content_id)
 
         return hit_lst
 
@@ -387,7 +404,7 @@ class User:
 
         f = np.random.random(contents_num)
         v = np.searchsorted(self.cdf, f)
-        samples = [t-1 for t in v]
+        samples = [t - 1 for t in v]
 
         for i in range(contents_num):
             self.pref_vec.append(samples.count(i) / contents_num)
@@ -410,7 +427,6 @@ class User:
         #
         # del tmp
         # del tmp_
-
 
         # np.random.shuffle(z.pdf)
         # self.pref_vec = z.pdf
@@ -442,7 +458,7 @@ class User:
 
         idx_p_tuple = list()
         for i, v in enumerate(self.pref_vec):
-            idx_p_tuple.append((i, v))  #i: index, v: popularity
+            idx_p_tuple.append((i, v))  # i: index, v: popularity
 
         # sort
         idx_p_tuple.sort(key=lambda t: t[1], reverse=True)
@@ -451,16 +467,18 @@ class User:
         hit_lst = [0 for _ in range(len(self.capable_server_lst[0].algo_lst))]
         if len(self.capable_server_lst) > 0:
             for s in self.capable_server_lst:
-                print("user {} requests the content {} at server {}".format(self.id, popularity_sorted[zipf_random], s.id))
+                print("user {} requests the content {} at server {}".format(self.id, popularity_sorted[zipf_random],
+                                                                            s.id))
                 tmp = s.request_content(popularity_sorted[zipf_random])
                 for i in range(len(hit_lst)):
                     if hit_lst[i] < 1:
                         hit_lst[i] += tmp[i]
         return popularity_sorted[zipf_random], hit_lst
 
+
 class PPP:
     def __init__(self):
-        #simulation window parameters
+        # simulation window parameters
         self.lambda0 = None
         self.xx = None
         self.yy = None
@@ -471,14 +489,14 @@ class PPP:
         yy0 = 0
         areaTotal = np.pi * r ** 2
 
-        #point process parameters
+        # point process parameters
         self.lambda0 = density
 
-        #simulate poisson point process
+        # simulate poisson point process
 
-        numbPoints = np.random.poisson(self.lambda0*areaTotal)   #poisson number of points
-        theta = 2 * np.pi * np.random.uniform(0, 1, numbPoints)  #angular coordinates
-        rho = r * np.sqrt(np.random.uniform(0, 1, numbPoints))   #radial coordinates
+        numbPoints = np.random.poisson(self.lambda0 * areaTotal)  # poisson number of points
+        theta = 2 * np.pi * np.random.uniform(0, 1, numbPoints)  # angular coordinates
+        rho = r * np.sqrt(np.random.uniform(0, 1, numbPoints))  # radial coordinates
 
         self.xx = rho * np.cos(theta)
         self.yy = rho * np.sin(theta)
@@ -499,7 +517,7 @@ class Zipf:
         self.cdf = None
 
     def set_env(self, expn, num_contents):
-        temp = np.power(np.arange(1, num_contents+1), -expn)
+        temp = np.power(np.arange(1, num_contents + 1), -expn)
         zeta = np.r_[0.0, np.cumsum(temp)]
         self.pdf = [x / zeta[-1] for x in temp]
         self.cdf = [x / zeta[-1] for x in zeta]

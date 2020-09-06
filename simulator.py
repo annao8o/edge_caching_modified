@@ -3,6 +3,9 @@ import numpy as np
 from datetime import datetime, timedelta
 from elements import *
 from cacheAlgo import *
+import pickle
+import xlsxwriter
+import csv
 
 np.random.seed(0)
 random.seed(0)
@@ -21,8 +24,8 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     c.make_cluster()
     # print("kmeans label:{}".format(cluster_label))
 
-    current_time = datetime(2000, 1, 1, hour=6, minute=0, second=0)
-    # record_time = datetime(2000, 1, 1, hour=15, minute=0, second=0)
+    current_time = datetime(2000, 1, 1, hour=0, minute=0, second=0)
+    record_time = datetime(2001, 1, 1, hour=0, minute=0, second=0)
     hit_result = [0 for _ in range(len(c.server_lst[0].algo_lst))]
 
     # c.get_most_popular_contents()
@@ -45,12 +48,30 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             algo.placement_content(data_lst)
         # s.init_caching()
     total_request = 0
-    req_matrix = list()
 
     current_time += update_period
-    daily_req = {i: 0 for i in range(num_contents)}
+    daily_req_all = {i: 0 for i in range(num_contents)}
+    daily_req_clsuter = {i:0 for i in range(num_contents)}
+    daily_req_clusters = [daily_req_clsuter for _ in range(len(c.cluster_lst))]
+    i=0
+    workbook = xlsxwriter.Workbook('cluster_pk.xlsx')
+
+    # with xlsxwriter.Workbook('cluster_pk.xlsx') as workbook:
+    worksheet_0 = workbook.add_worksheet()
+    worksheet_1 = workbook.add_worksheet()
+    worksheet_2 = workbook.add_worksheet()
+    worksheet_lst = [worksheet_0, worksheet_1, worksheet_2]
 
     while current_time <= end_time:
+        '''
+        # 하루마다 daily_req 초기화
+        if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
+            c.record_request(daily_req_all)
+            for cluster in c.cluster_lst:
+                cluster.req_cnt_mat.append(daily_req_clusters[cluster.id])
+                daily_req_clusters[cluster.id] = daily_req_clsuter  # 0으로 초기화
+            daily_req_all = {i: 0 for i in range(num_contents)}  # 0으로 초기화
+        '''
 
         # generate the users randomly
         arrive_user = np.random.poisson(arrival_rate)
@@ -58,19 +79,11 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             d_minute = np.random.exponential(1 / departure_rate)
             d_minute = round(d_minute)
             duration = timedelta(minutes=d_minute)
-            c.arrive(current_time, duration)
-
-        # 하루마다 daily_req 초기화
-        if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
-            c.record_request(daily_req)
-            daily_req = {i: 0 for i in range(num_contents)}
-
+            cluster_id = c.arrive(current_time, duration)
 
         print(current_time)
 
-        # generate the requests randomly (각 서버의 p_k에 따라 request 생성하는 것으로 수정 필요)
         requests = np.random.poisson(request_rate)
-
         req_user = list()
         for _ in range(requests):
             random_u = c.user_lst[random.randrange(len(c.user_lst))]
@@ -87,15 +100,30 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
 
             print(hit_result, '\n')
 
-            daily_req[requested_content] += 1
+            # daily_req_all[requested_content] += 1
+            # daily_req_clusters[u.cluster][requested_content] += 1
+
+        # cluster, p_k update
+        for c_i in range(cluster_num):
+            new_p_k = c.cluster_lst[c_i].cal_p_k(contents_num)
+            for col_num, data in enumerate(new_p_k):
+                worksheet_lst[c_i].write(i, col_num, data)
 
         # update the current users based on their departure time
         c.update(current_time)
         current_time += update_period
+        i+=1
+    workbook.close()
+
+    # for cluster in c.cluster_lst:
+    #     save_pickle('cluster_'+str(cluster.id)+'_req_cnt', cluster.req_cnt_mat)
 
     result = {'total_request': total_request, 'hit_count': hit_result, 'hit_ratio': np.array(hit_result) / total_request}
     print(result)
 
+def save_pickle(name, file):
+    with open(name, 'wb') as handle:
+        pickle.dump(file, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     c = Cloud()
@@ -111,7 +139,7 @@ if __name__ == "__main__":
     cluster_num = 3
     server_communication_r = 1.0
     z_val = 1.0
-    arrival_rate = 1
+    arrival_rate = 10
     departure_rate = 1/60
     request_rate = 10
 
