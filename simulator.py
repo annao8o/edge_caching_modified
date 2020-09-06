@@ -3,8 +3,13 @@ import numpy as np
 from datetime import datetime, timedelta
 from elements import *
 from cacheAlgo import *
+import pickle
+import xlsxwriter
+import csv
 
 np.random.seed(0)
+random.seed(0)
+
 def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rate):
     update_period = timedelta(minutes=1)
     end_time = datetime(2000, 1, 1, hour=22, minute=0, second=0)
@@ -15,11 +20,12 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     ## generate and cluster users
     for u in c.user_lst:
         u.make_pref(z_val, num_contents)
+
     c.make_cluster()
     # print("kmeans label:{}".format(cluster_label))
 
-    current_time = datetime(2000, 1, 1, hour=6, minute=0, second=0)
-    # record_time = datetime(2000, 1, 1, hour=15, minute=0, second=0)
+    current_time = datetime(2000, 1, 1, hour=0, minute=0, second=0)
+    record_time = datetime(2001, 1, 1, hour=0, minute=0, second=0)
     hit_result = [0 for _ in range(len(c.server_lst[0].algo_lst))]
 
     # c.get_most_popular_contents()
@@ -42,12 +48,30 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             algo.placement_content(data_lst)
         # s.init_caching()
     total_request = 0
-    req_matrix = list()
 
     current_time += update_period
-    daily_req = {i: 0 for i in range(num_contents)}
+    daily_req_all = {i: 0 for i in range(num_contents)}
+    daily_req_clsuter = {i:0 for i in range(num_contents)}
+    daily_req_clusters = [daily_req_clsuter for _ in range(len(c.cluster_lst))]
+    i=0
+    workbook = xlsxwriter.Workbook('cluster_pk.xlsx')
+
+    # with xlsxwriter.Workbook('cluster_pk.xlsx') as workbook:
+    worksheet_0 = workbook.add_worksheet()
+    worksheet_1 = workbook.add_worksheet()
+    worksheet_2 = workbook.add_worksheet()
+    worksheet_lst = [worksheet_0, worksheet_1, worksheet_2]
 
     while current_time <= end_time:
+        '''
+        # 하루마다 daily_req 초기화
+        if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
+            c.record_request(daily_req_all)
+            for cluster in c.cluster_lst:
+                cluster.req_cnt_mat.append(daily_req_clusters[cluster.id])
+                daily_req_clusters[cluster.id] = daily_req_clsuter  # 0으로 초기화
+            daily_req_all = {i: 0 for i in range(num_contents)}  # 0으로 초기화
+        '''
 
         # generate the users randomly
         arrive_user = np.random.poisson(arrival_rate)
@@ -55,18 +79,11 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             d_minute = np.random.exponential(1 / departure_rate)
             d_minute = round(d_minute)
             duration = timedelta(minutes=d_minute)
-            c.arrive(current_time, duration)
-
-        # 하루마다 daily_req 초기화
-        if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
-            c.req_mat.append(daily_req)
-            daily_req = {i: 0 for i in range(num_contents)}
+            cluster_id = c.arrive(current_time, duration)
 
         print(current_time)
 
-        # generate the requests randomly (각 서버의 p_k에 따라 request 생성하는 것으로 수정 필요)
         requests = np.random.poisson(request_rate)
-
         req_user = list()
         for _ in range(requests):
             random_u = c.user_lst[random.randrange(len(c.user_lst))]
@@ -75,23 +92,38 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
 
         for u in req_user:
             total_request += 1
-            zipf_random = zipf.get_sample()
-            requested_content, hit_lst = u.request(zipf_random)
+            # zipf_random = zipf.get_sample()
+            requested_content, hit_lst = u.request()
             print(hit_lst)
             for i in range(len(hit_lst)):
                 hit_result[i] += hit_lst[i]
 
             print(hit_result, '\n')
 
-            daily_req[requested_content] += 1
+            # daily_req_all[requested_content] += 1
+            # daily_req_clusters[u.cluster][requested_content] += 1
+
+        # cluster, p_k update
+        for c_i in range(cluster_num):
+            new_p_k = c.cluster_lst[c_i].cal_p_k(contents_num)
+            for col_num, data in enumerate(new_p_k):
+                worksheet_lst[c_i].write(i, col_num, data)
 
         # update the current users based on their departure time
         c.update(current_time)
         current_time += update_period
+        i+=1
+    workbook.close()
+
+    # for cluster in c.cluster_lst:
+    #     save_pickle('cluster_'+str(cluster.id)+'_req_cnt', cluster.req_cnt_mat)
 
     result = {'total_request': total_request, 'hit_count': hit_result, 'hit_ratio': np.array(hit_result) / total_request}
     print(result)
 
+def save_pickle(name, file):
+    with open(name, 'wb') as handle:
+        pickle.dump(file, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 if __name__ == "__main__":
     c = Cloud()
@@ -99,7 +131,7 @@ if __name__ == "__main__":
     server = PPP()
     server_position = server.set_env(0.5)
     user = PPP()
-    user_position = user.set_env(4)
+    user_position = user.set_env(10)
 
     # server_num = 5
     # user_num = 200
@@ -107,7 +139,7 @@ if __name__ == "__main__":
     cluster_num = 3
     server_communication_r = 1.0
     z_val = 1.0
-    arrival_rate = 1
+    arrival_rate = 10
     departure_rate = 1/60
     request_rate = 10
 
@@ -134,79 +166,79 @@ if __name__ == "__main__":
                 u.capable_server_lst.append(s)
                 u.state = True
 
-        algo_0 = CacheAlgo()
-        algo_0.set_option('algo_0', False, 1, 0, 1)
-        algo_1 = CacheAlgo()
-        algo_1.set_option('algo_1', False, 1, 200, 1)
-        algo_2 = CacheAlgo()
-        algo_2.set_option('algo_2', False, 1, 400, 1)
+        # algo_0 = CacheAlgo()
+        # algo_0.set_option('algo_0', False, 1, 0, 1)
+        # algo_1 = CacheAlgo()
+        # algo_1.set_option('algo_1', False, 1, 200, 1)
+        # algo_2 = CacheAlgo()
+        # algo_2.set_option('algo_2', False, 1, 400, 1)
         algo_3 = CacheAlgo()
         algo_3.set_option('algo_3', False, 1, 600, 1)
-        algo_4 = CacheAlgo()
-        algo_4.set_option('algo_4', False, 1, 800, 1)
-        algo_5 = CacheAlgo()
-        algo_5.set_option('algo_5', False, 1, 1000, 1)
-        algo_6 = CacheAlgo()
-        algo_6.set_option('algo_6', False, 1, 1200, 1)
-        algo_7 = CacheAlgo()
-        algo_7.set_option('algo_7', False, 1, 1400, 1)
-        algo_8 = CacheAlgo()
-        algo_8.set_option('algo_8', False, 1, 1600, 1)
-        algo_9 = CacheAlgo()
-        algo_9.set_option('algo_9', False, 1, 1800, 1)
-        algo_10 = CacheAlgo()
-        algo_10.set_option('algo_10', False, 1, 2000, 1)
+        # algo_4 = CacheAlgo()
+        # algo_4.set_option('algo_4', False, 1, 800, 1)
+        # algo_5 = CacheAlgo()
+        # algo_5.set_option('algo_5', False, 1, 1000, 1)
+        # algo_6 = CacheAlgo()
+        # algo_6.set_option('algo_6', False, 1, 1200, 1)
+        # algo_7 = CacheAlgo()
+        # algo_7.set_option('algo_7', False, 1, 1400, 1)
+        # algo_8 = CacheAlgo()
+        # algo_8.set_option('algo_8', False, 1, 1600, 1)
+        # algo_9 = CacheAlgo()
+        # algo_9.set_option('algo_9', False, 1, 1800, 1)
+        # algo_10 = CacheAlgo()
+        # algo_10.set_option('algo_10', False, 1, 2000, 1)
 
-        algo_11 = CacheAlgo()
-        algo_11.set_option('algo_11', True, cluster_num, 0, 1)
-        algo_12 = CacheAlgo()
-        algo_12.set_option('algo_12', True, cluster_num, 200, 1)
-        algo_13 = CacheAlgo()
-        algo_13.set_option('algo_13', True, cluster_num, 400, 1)
+        # algo_11 = CacheAlgo()
+        # algo_11.set_option('algo_11', True, cluster_num, 0, 1)
+        # algo_12 = CacheAlgo()
+        # algo_12.set_option('algo_12', True, cluster_num, 200, 1)
+        # algo_13 = CacheAlgo()
+        # algo_13.set_option('algo_13', True, cluster_num, 400, 1)
         algo_14 = CacheAlgo()
         algo_14.set_option('algo_14', True, cluster_num, 600, 1)
-        algo_15 = CacheAlgo()
-        algo_15.set_option('algo_15', True, cluster_num, 800, 1)
-        algo_16 = CacheAlgo()
-        algo_16.set_option('algo_16', True, cluster_num, 1000, 1)
-        algo_17 = CacheAlgo()
-        algo_17.set_option('algo_17', True, cluster_num, 1200, 1)
-        algo_18 = CacheAlgo()
-        algo_18.set_option('algo_18', True, cluster_num, 1400, 1)
-        algo_19 = CacheAlgo()
-        algo_19.set_option('algo_19', True, cluster_num, 1600, 1)
-        algo_20 = CacheAlgo()
-        algo_20.set_option('algo_20', True, cluster_num, 1800, 1)
-        algo_21 = CacheAlgo()
-        algo_21.set_option('algo_21', True, cluster_num, 2000, 1)
+        # algo_15 = CacheAlgo()
+        # algo_15.set_option('algo_15', True, cluster_num, 800, 1)
+        # algo_16 = CacheAlgo()
+        # algo_16.set_option('algo_16', True, cluster_num, 1000, 1)
+        # algo_17 = CacheAlgo()
+        # algo_17.set_option('algo_17', True, cluster_num, 1200, 1)
+        # algo_18 = CacheAlgo()
+        # algo_18.set_option('algo_18', True, cluster_num, 1400, 1)
+        # algo_19 = CacheAlgo()
+        # algo_19.set_option('algo_19', True, cluster_num, 1600, 1)
+        # algo_20 = CacheAlgo()
+        # algo_20.set_option('algo_20', True, cluster_num, 1800, 1)
+        # algo_21 = CacheAlgo()
+        # algo_21.set_option('algo_21', True, cluster_num, 2000, 1)
 
-        algo_22 = CacheAlgo()
-        algo_22.set_option('algo_22', True, cluster_num, 0, 2)
-        algo_23 = CacheAlgo()
-        algo_23.set_option('algo_23', True, cluster_num, 200, 2)
-        algo_24 = CacheAlgo()
-        algo_24.set_option('algo_24', True, cluster_num, 400, 2)
+        # algo_22 = CacheAlgo()
+        # algo_22.set_option('algo_22', True, cluster_num, 0, 2)
+        # algo_23 = CacheAlgo()
+        # algo_23.set_option('algo_23', True, cluster_num, 200, 2)
+        # algo_24 = CacheAlgo()
+        # algo_24.set_option('algo_24', True, cluster_num, 400, 2)
         algo_25 = CacheAlgo()
         algo_25.set_option('algo_25', True, cluster_num, 600, 2)
-        algo_26 = CacheAlgo()
-        algo_26.set_option('algo_26', True, cluster_num, 800, 2)
-        algo_27 = CacheAlgo()
-        algo_27.set_option('algo_27', True, cluster_num, 1000, 2)
-        algo_28 = CacheAlgo()
-        algo_28.set_option('algo_28', True, cluster_num, 1200, 2)
-        algo_29 = CacheAlgo()
-        algo_29.set_option('algo_29', True, cluster_num, 1400, 2)
-        algo_30 = CacheAlgo()
-        algo_30.set_option('algo_30', True, cluster_num, 1600, 2)
-        algo_31 = CacheAlgo()
-        algo_31.set_option('algo_31', True, cluster_num, 1800, 2)
-        algo_32 = CacheAlgo()
-        algo_32.set_option('algo_32', True, cluster_num, 2000, 2)
+        # algo_26 = CacheAlgo()
+        # algo_26.set_option('algo_26', True, cluster_num, 800, 2)
+        # algo_27 = CacheAlgo()
+        # algo_27.set_option('algo_27', True, cluster_num, 1000, 2)
+        # algo_28 = CacheAlgo()
+        # algo_28.set_option('algo_28', True, cluster_num, 1200, 2)
+        # algo_29 = CacheAlgo()
+        # algo_29.set_option('algo_29', True, cluster_num, 1400, 2)
+        # algo_30 = CacheAlgo()
+        # algo_30.set_option('algo_30', True, cluster_num, 1600, 2)
+        # algo_31 = CacheAlgo()
+        # algo_31.set_option('algo_31', True, cluster_num, 1800, 2)
+        # algo_32 = CacheAlgo()
+        # algo_32.set_option('algo_32', True, cluster_num, 2000, 2)
 
         # s.add_algo(algo_0)
         # s.add_algo(algo_1)
-        s.add_algo(algo_2)
-        # s.add_algo(algo_3)
+        # s.add_algo(algo_2)
+        s.add_algo(algo_3)
         # s.add_algo(algo_4)
         # s.add_algo(algo_5)
         # s.add_algo(algo_6)
