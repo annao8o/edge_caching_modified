@@ -53,14 +53,14 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
     daily_req_all = {i: 0 for i in range(num_contents)}
     daily_req_clsuter = {i:0 for i in range(num_contents)}
     daily_req_clusters = [daily_req_clsuter for _ in range(len(c.cluster_lst))]
-    i=0
-    workbook = xlsxwriter.Workbook('cluster_pk.xlsx')
-
-    # with xlsxwriter.Workbook('cluster_pk.xlsx') as workbook:
-    worksheet_0 = workbook.add_worksheet()
-    worksheet_1 = workbook.add_worksheet()
-    worksheet_2 = workbook.add_worksheet()
-    worksheet_lst = [worksheet_0, worksheet_1, worksheet_2]
+    # i=0
+    # workbook = xlsxwriter.Workbook('cluster_pk.xlsx')
+    #
+    # # with xlsxwriter.Workbook('cluster_pk.xlsx') as workbook:
+    # worksheet_0 = workbook.add_worksheet()
+    # worksheet_1 = workbook.add_worksheet()
+    # worksheet_2 = workbook.add_worksheet()
+    # worksheet_lst = [worksheet_0, worksheet_1, worksheet_2]
 
     while current_time <= end_time:
         '''
@@ -90,30 +90,31 @@ def simulation(c, z_val, num_contents, arrival_rate, departure_rate, request_rat
             if random_u.state and random_u not in req_user:
                 req_user.append(random_u)
 
-        for u in req_user:
-            total_request += 1
-            # zipf_random = zipf.get_sample()
-            requested_content, hit_lst = u.request()
-            print(hit_lst)
-            for i in range(len(hit_lst)):
-                hit_result[i] += hit_lst[i]
+        if t > record_period:
+            for u in req_user:
+                total_request += 1
+                # zipf_random = zipf.get_sample()
+                requested_content, hit_lst = u.request(t-record_period)
+                print(hit_lst)
+                for i in range(len(hit_lst)):
+                    hit_result[i] += hit_lst[i]
 
-            print(hit_result, '\n')
+                print(hit_result, '\n')
 
             # daily_req_all[requested_content] += 1
             # daily_req_clusters[u.cluster][requested_content] += 1
 
-        # cluster, p_k update
-        for c_i in range(cluster_num):
-            new_p_k = c.cluster_lst[c_i].cal_p_k(contents_num)
-            for col_num, data in enumerate(new_p_k):
-                worksheet_lst[c_i].write(i, col_num, data)
+        # # cluster, p_k update
+        # for c_i in range(cluster_num):
+        #     new_p_k = c.cluster_lst[c_i].cal_p_k(contents_num)
+        #     for col_num, data in enumerate(new_p_k):
+        #         worksheet_lst[c_i].write(i, col_num, data)
 
         # update the current users based on their departure time
         c.update(current_time)
         current_time += update_period
-        i+=1
-    workbook.close()
+    #     i+=1
+    # workbook.close()
 
     # for cluster in c.cluster_lst:
     #     save_pickle('cluster_'+str(cluster.id)+'_req_cnt', cluster.req_cnt_mat)

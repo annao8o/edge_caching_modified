@@ -142,11 +142,10 @@ class Cloud:
         trn_loss_list = model_training(self.m, learning_rate, num_epochs, train_loader)
 
     def prediction(self):
-        self.m.eval()
-        test_predict = self.m
-
         for cluster in self.cluster_lst:
-            cluster.popularity_dict
+            d = pd.read_pickle('prediction_result_mat('+str(cluster.id)+').pickle')
+            cluster.predicted_p = pd.DataFrame(d)
+
 
     def make_cluster(self):
         p_vectors = list()
@@ -297,7 +296,6 @@ class Cluster:
         self.id = id
         self.p_k = None
         self.predicted_p = None
-        self.req_cnt_mat = list()
         self.cluster_users = list()
 
     def add_user(self, user):
@@ -328,8 +326,6 @@ class Cluster:
         popularity_sorted = [e[0] for e in idx_p_tuple]
         return popularity_sorted
 
-    def set_predicted_p(self):
-        self.predicted_p = pd.read_pickle('prediction_result_mat('+str(self.id)+').pickle')
 
 class EdgeServer:
     def __init__(self, id, position):
@@ -365,7 +361,7 @@ class EdgeServer:
     #         contents = algo.placement_content(data_lst)
     #         print("algo {}: {}".format(algo.id, contents))
 
-    def request_content(self, content_id):
+    def request_content(self, t, content_id):
         # print('requests content (id: {})'.format(content_id))
 
         # self.total_request += 1
@@ -379,7 +375,7 @@ class EdgeServer:
             else:
                 print("{} >> no hit!".format(algo.id))
                 hit_lst.append(0)
-                # algo.replacement_content(content_id)
+                algo.replacement_content(t, content_id)
 
         return hit_lst
 
@@ -441,7 +437,7 @@ class User:
     def set_cluster(self, cluster_id):
         self.cluster = cluster_id
 
-    def request(self):
+    def request(self, t):
         f = np.random.random()
         content = np.searchsorted(self.cdf, f) - 1
 
@@ -449,31 +445,12 @@ class User:
         if len(self.capable_server_lst) > 0:
             for s in self.capable_server_lst:
                 print("user {} requests the content {} at server {}".format(self.id, content, s.id))
-                tmp = s.request_content(content)
+                tmp = s.request_content(t, content)
                 for i in range(len(hit_lst)):
                     if hit_lst[i] < 1:
                         hit_lst[i] += tmp[i]
 
         return content, hit_lst
-
-        idx_p_tuple = list()
-        for i, v in enumerate(self.pref_vec):
-            idx_p_tuple.append((i, v))  # i: index, v: popularity
-
-        # sort
-        idx_p_tuple.sort(key=lambda t: t[1], reverse=True)
-        popularity_sorted = [e[0] for e in idx_p_tuple]
-
-        hit_lst = [0 for _ in range(len(self.capable_server_lst[0].algo_lst))]
-        if len(self.capable_server_lst) > 0:
-            for s in self.capable_server_lst:
-                print("user {} requests the content {} at server {}".format(self.id, popularity_sorted[zipf_random],
-                                                                            s.id))
-                tmp = s.request_content(popularity_sorted[zipf_random])
-                for i in range(len(hit_lst)):
-                    if hit_lst[i] < 1:
-                        hit_lst[i] += tmp[i]
-        return popularity_sorted[zipf_random], hit_lst
 
 
 class PPP:

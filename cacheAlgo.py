@@ -11,6 +11,8 @@ class CacheAlgo:
         self.cluster_num = None
         self.replacement_method = None
         self.cluster = None
+        self.replacement_cnt = 0
+
 
     def set_option(self, id, is_cluster, cluster_num, capacity, LCU_num, rep_method='prediction'):
         self.id = id
@@ -60,8 +62,9 @@ class CacheAlgo:
                 break
         return hit
 
-    def replacement_content(self, new_content_id):
+    def replacement_content(self, t, new_content_id):
         evict_content = -1
+        p_stack = list()
         if self.replacement_method == "None":
             pass
         elif self.replacement_method == "LRU":
@@ -72,9 +75,14 @@ class CacheAlgo:
             pass
         elif self.replacement_method == "PREDICTION":
             for i in range(len(self.cluster)):
-                p_stack = sorted(self.cluster[i].popualrity_dict.items(), key=lambda item:item[1])
+                t_p = self.cluster.predicted_p.loc[t]
+                new_p = t_p[new_content_id]
+
+                for cached_content in self.cached_contents_lst:
+                    p_stack.append((cached_content, t_p[cached_content]))
+                p_stack.sort(key=lambda t: t[1], reverse=True)
                 least_id, least_p = p_stack[0]     #predicted popularity stack에서 least 인 것 하나 가져옴
-                new_p = self.cluster[i].popularity_dict[new_content_id]
+
                 if least_p < new_p:
                     evict_content = least_id
                     self.cached_contents_lst.remove(least_id)   #캐시에서 popularity가 가장 낮은 content 삭제
